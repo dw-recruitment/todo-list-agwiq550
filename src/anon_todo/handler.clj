@@ -1,4 +1,4 @@
-(ns anon-todo-2.handler
+(ns anon-todo.handler
   (:require [compojure.core :refer :all]
             [compojure.route :as route]
             [ring.middleware.defaults :refer [wrap-defaults site-defaults]]))
