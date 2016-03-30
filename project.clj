@@ -6,7 +6,8 @@
                  [compojure "1.5.0"]
                  [ring/ring-defaults "0.2.0"]
                  [org.clojure/java.jdbc "0.5.0"]
-                 [org.postgresql/postgresql "9.4.1208"]]
+                 [org.postgresql/postgresql "9.4.1208"]
+                 [hiccup "1.0.5"]]
   :plugins [[lein-ring "0.9.7"]]
   :ring {:handler anon-todo.handler/app}
   :profiles

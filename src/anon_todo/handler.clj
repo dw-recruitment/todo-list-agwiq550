@@ -2,7 +2,8 @@
   (:require [compojure.core :refer :all]
             [compojure.route :as route]
             [ring.middleware.defaults :refer [wrap-defaults site-defaults]]
-            [clojure.java.jdbc :as sql]))
+            [clojure.java.jdbc :as sql]
+            [hiccup.core :as hiccup]))
 
 (def sql-address "postgresql://localhost:5432/anon-todo")
 
@@ -25,7 +26,11 @@
 
 (defroutes app-routes
   (GET "/" []
-       "<img src=\"http://www.zlok.net/blog/wp-content/uploads/under-construction-13.gif\" alt=\"A man hitting the words 'under construction' with a hammer\"></img>")
+       (hiccup/html
+        [:head]
+        [:body
+         [:ul
+          (map (fn [todo] [:li (:description todo)]) (sql/query sql-address ["SELECT * FROM todos"]))]]))
   (GET "/about" []
        "<p>This project is an anonymous todo list.  For democracy works!</p>")
   (route/not-found "Not Found"))
