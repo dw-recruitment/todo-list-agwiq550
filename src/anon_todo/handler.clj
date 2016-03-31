@@ -2,6 +2,8 @@
   (:require [compojure.core :refer :all]
             [compojure.route :as route]
             [ring.middleware.defaults :refer [wrap-defaults site-defaults]]
+            [ring.util.anti-forgery :refer [anti-forgery-field]]
+            [ring.util.response :refer [redirect]]
             [clojure.java.jdbc :as sql]
             [hiccup.core :as hiccup]))
 
@@ -24,16 +26,26 @@
 
 (mock-up-db)
 
+(def todo-list (atom {}))
+
 (defroutes app-routes
   (GET "/" []
        (hiccup/html
         [:head]
         [:body
          [:ul
-          (map (fn [todo] [:li (:description todo)]) (sql/query sql-address ["SELECT * FROM todos"]))]]))
+          (map (fn [todo] [:li (:description todo)]) (sql/query sql-address ["SELECT * FROM todos"]))]
+         [:form {:action "/add-todo" :method "POST"}
+          (anti-forgery-field)
+          [:input {:type "Text" :name "description" :placeholder "Todo: "}]
+          [:input {:type "submit" :value "Add todo to list"}]]]))
   (GET "/about" []
        "<p>This project is an anonymous todo list.  For democracy works!</p>")
+  (POST "/add-todo" [_ & rest]
+        (sql/insert! sql-address :todos {:description (:description rest) :done false})
+        (redirect "/"))
   (route/not-found "Not Found"))
+
 
 (def app
   (wrap-defaults app-routes site-defaults))
