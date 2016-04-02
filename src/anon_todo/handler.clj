@@ -27,10 +27,9 @@
                                               [:list :int])))
 
   (if (empty? (sql/query sql-address ["SELECT * FROM todos WHERE name = 'anon'"]))
-    (sql/insert! sql-address
-                :todos
-                {:description "Find the flow" :done false :name "anon" :list 1}
-                {:description "Nurture and nourish the flow" :done true :name "anon" :list 1}))
+    (sql/insert! sql-address :todos
+                 {:description "Find the flow" :done false :name "anon" :list 1}
+                 {:description "Nurture and nourish the flow" :done true :name "anon" :list 1})))
 
 (mock-up-db)
 
@@ -42,9 +41,41 @@
   [todo]
   (sql/insert! sql-address :todos {:description (:description todo) :done false}))
 
-(defn update-done
-  [id done-state]
-  (sql/update! sql-address :todos {:done (not (read-string done-state))} [ "id = ?" (Integer/parseInt id)]))
+(defn update-todo
+  [col transform-fn todo]
+  (sql/update! sql-address :todos {col (-> todo (col) (read-string) (transform-fn))} [ "id = ?" (Integer/parseInt (:id todo))]))
+
+(defn delete-todo
+  [id]
+  (sql/delete! sql-address :todos [ "id = ?" (Integer/parseInt id)]))
+
+(def toggle-todo (partial update-todo :done not))
+;(defn toggle-todo
+  ;[todo]
+  ;(update-todo id todo :done not))
+
+
+(defn todo-cluster
+  [todo]
+  (hiccup/html
+    (if (:done todo)
+      [:li [:del (:description todo)]]
+      [:li (:description todo)])
+    ;; [:h1 (str todo)]
+    [:form {:action (str "/update-done/" (:id todo)) :method "POST"}
+     (anti-forgery-field)
+     [:input {:type "hidden" :name "done" :value (str (:done todo))}]
+     [:input {:type "hidden" :name "description" :value (str (:description todo))}]
+     [:input {:type "hidden" :name "list" :value (str (:list todo))}]
+     [:input {:type "hidden" :name "name" :value (str (:name todo))}]
+     [:input {:type "submit" :value (if (:done todo)
+                                      "Undo"
+                                      "Complete")}]]
+    [:form {:action (str "/delete-todo/" (:id todo)) :method "POST"}
+     (anti-forgery-field)
+     [:input {:type "submit" :value "Delete this Todo"}]]))
+
+;; almost got all the view out of the routes.  That's next.
 
 (defroutes app-routes
   (GET "/" []
@@ -52,34 +83,24 @@
          [:head]
          [:body
           [:ul
-           (map (fn [todo]
-                  (hiccup/html (if (:done todo)
-                                 [:li [:del (:description todo)]]
-                                 [:li (:description todo)])
-                               ;; [:h1 (str todo)]
-                               [:form {:action (str "/update-done/" (:id todo)) :method "POST" }
-                                (anti-forgery-field)
-                                [:input {:type "hidden" :name "done" :value (str (:done todo))}]
-                                [:input {:type "submit" :value (if (:done todo)
-                                                                 "Undo"
-                                                                 "Complete")}]])) (get-todos))]
+           (map todo-cluster (get-todos))]
           [:form {:action "/add-todo" :method "POST"}
            (anti-forgery-field)
            [:input {:type "Text" :name "description" :placeholder "Todo: "}]
            [:input {:type "submit" :value "Add todo to list"}]]]))
-
   (GET "/about" []
-       "<p>This project is an anonymous todo list.  For democracy works!</p>")
-
+      "<p>This project is an anonymous todo list.  For democracy works!</p>")
   (POST "/add-todo" [_ & rest]
         (post-todo rest)
         (redirect "/"))
-
   (POST "/update-done/:id" [id & rest]
-        (update-done id (:done rest))
+        (toggle-todo (assoc-in rest [:id] id))
         (redirect "/")) ;; patch might not work
-
+  (POST "/delete-todo/:id" [id & rest]
+        (delete-todo id)
+        (redirect "/"))
   (route/not-found "Not Found"))
+
 ;; (fn [e] (println e)
 ;;   (update-done todo))
 

@@ -1,5 +1,5 @@
--- delete todo button
+-- button to delete todo
 -- styling (bootstrap?)
 -- multiple todo lists
 -- WebSockets for "pushing" notifications of model changes via events
--- Reagent / re-frame for SPA vers.
+-- Reagent / re-frame SPA vers.
