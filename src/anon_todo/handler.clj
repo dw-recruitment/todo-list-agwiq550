@@ -7,22 +7,30 @@
             [clojure.java.jdbc :as sql]
             [hiccup.core :as hiccup]))
 
+;; so the db stuff goes to the model
+;; the hiccup / view stuff goes to the view
+;; the routing stuff goes to the controller
+
+
 (def sql-address "postgresql://localhost:5432/anon-todo")
 
 (defn mock-up-db
+  "Set up the db"
   []
-  (if (not (empty? (sql/query sql-address ["SELECT * FROM pg_class WHERE relname='todos'"])))
+  (if (empty? (sql/query sql-address ["SELECT * FROM pg_class WHERE relname='todos'"]))
     (sql/db-do-commands sql-address
-                        (sql/drop-table-ddl :todos)))
-  (sql/db-do-commands sql-address
-                      (sql/create-table-ddl :todos
-                                            [:id "serial primary key"]
-                                            [:description :text]
-                                            [:done :bool]))
-  (sql/insert! sql-address
-               :todos
-               {:description "Find the flow" :done false}
-               {:description "Nurture and nourish the flow" :done true}))
+                        (sql/create-table-ddl :todos
+                                              [:id "serial primary key"]
+                                              [:description :text]
+                                              [:done :bool]
+                                              [:name :text]
+                                              [:list :int])))
+
+  (if (empty? (sql/query sql-address ["SELECT * FROM todos WHERE name = 'anon'"]))
+    (sql/insert! sql-address
+                :todos
+                {:description "Find the flow" :done false :name "anon" :list 1}
+                {:description "Nurture and nourish the flow" :done true :name "anon" :list 1}))
 
 (mock-up-db)
 
@@ -41,24 +49,24 @@
 (defroutes app-routes
   (GET "/" []
        (hiccup/html
-        [:head]
-        [:body
-         [:ul
-          (map (fn [todo]
-                 (hiccup/html (if (:done todo)
-                                         [:li [:del (:description todo)]]
-                                         [:li (:description todo)])
-                                       ;; [:h1 (str todo)]
-                                       [:form {:action (str "/update-done/" (:id todo)) :method "POST" }
-                                        (anti-forgery-field)
-                                        [:input {:type "hidden" :name "done" :value (str (:done todo))}]
-                                        [:input {:type "submit" :value (if (:done todo)
-                                                                         "Undo"
-                                                                         "Complete")}]])) (get-todos))]
-         [:form {:action "/add-todo" :method "POST"}
-          (anti-forgery-field)
-          [:input {:type "Text" :name "description" :placeholder "Todo: "}]
-          [:input {:type "submit" :value "Add todo to list"}]]]))
+         [:head]
+         [:body
+          [:ul
+           (map (fn [todo]
+                  (hiccup/html (if (:done todo)
+                                 [:li [:del (:description todo)]]
+                                 [:li (:description todo)])
+                               ;; [:h1 (str todo)]
+                               [:form {:action (str "/update-done/" (:id todo)) :method "POST" }
+                                (anti-forgery-field)
+                                [:input {:type "hidden" :name "done" :value (str (:done todo))}]
+                                [:input {:type "submit" :value (if (:done todo)
+                                                                 "Undo"
+                                                                 "Complete")}]])) (get-todos))]
+          [:form {:action "/add-todo" :method "POST"}
+           (anti-forgery-field)
+           [:input {:type "Text" :name "description" :placeholder "Todo: "}]
+           [:input {:type "submit" :value "Add todo to list"}]]]))
 
   (GET "/about" []
        "<p>This project is an anonymous todo list.  For democracy works!</p>")
@@ -66,9 +74,9 @@
   (POST "/add-todo" [_ & rest]
         (post-todo rest)
         (redirect "/"))
-  
+
   (POST "/update-done/:id" [id & rest]
-        (update-done id (:done rest)) 
+        (update-done id (:done rest))
         (redirect "/")) ;; patch might not work
 
   (route/not-found "Not Found"))
