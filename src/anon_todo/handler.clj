@@ -26,7 +26,9 @@
 
 (mock-up-db)
 
-(def todo-list (atom {}))
+(defn get-todos
+  []
+  (sql/query sql-address ["SELECT * FROM todos"]))
 
 (defroutes app-routes
   (GET "/" []
@@ -34,14 +36,19 @@
         [:head]
         [:body
          [:ul
-          (map (fn [todo] [:li (:description todo)]) (sql/query sql-address ["SELECT * FROM todos"]))]
+          (map (fn [todo] (if (:done todo)
+                            [:li [:del (:description todo)]]
+                            [:li (:description todo)])) (get-todos))]
          [:form {:action "/add-todo" :method "POST"}
           (anti-forgery-field)
           [:input {:type "Text" :name "description" :placeholder "Todo: "}]
           [:input {:type "submit" :value "Add todo to list"}]]]))
+
   (GET "/about" []
        "<p>This project is an anonymous todo list.  For democracy works!</p>")
+
   (POST "/add-todo" [_ & rest]
+        (println _ rest)
         (sql/insert! sql-address :todos {:description (:description rest) :done false})
         (redirect "/"))
   (route/not-found "Not Found"))
