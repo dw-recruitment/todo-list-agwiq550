@@ -113,27 +113,31 @@
 
 ;; almost got all the view out of the routes.  That's next.
 
+;; get-todos is called twice in the todo-list view function
+;; so there should be a function in the controller that calls get-todos once
+;; and passes the result into todo-list
 (defn todo-list
   [list-info]
-  (hiccup/html
-   [:div.col-md-4
-    [:div.panel.panel-default
-     [:div.panel-heading (str (:title list-info))
-      [:a.btn.btn-danger.btn-sm.pull-right {:href (str "/delete-list/" (:id list-info)) :style (str "visibility:" (if (empty? (get-todos (:id list-info)))
-                                                                                       "visible"
-                                                                                       "hidden"))}
-      [:span.glyphicon.glyphicon-minus]]]
-     [:div.panel-body
-      [:div.row
-       [:ul.list-group
-        (map todo-cluster (get-todos (:id list-info)))]
-       [:form {:action "/add-todo" :method "POST"}
-        (anti-forgery-field)
-        [:div.input-group
-         [:input {:type "hidden" :name "list" :value (:id list-info)}]
-         [:input.form-control {:type "Text" :name "description" :placeholder "Todo: "}]
-         [:span.input-group-btn
-          [:input.btn.btn-success {:type "submit" :value "Add todo to list"}]]]]]]]]))
+  (let [todos (get-todos (:id list-info))]
+    (hiccup/html
+     [:div.col-md-4
+      [:div.panel.panel-default
+        [:div.panel-heading (str (:title list-info))
+          [:a.btn.btn-danger.btn-sm.pull-right {:href (str "/delete-list/" (:id list-info)) :style (str "visibility:" (if (empty? todos)
+                                                                                                                        "visible"
+                                                                                                                        "hidden"))}
+            [:span.glyphicon.glyphicon-minus]]]
+          [:div.panel-body
+            [:div.row]
+            [:ul.list-group
+              (map todo-cluster todos)]
+            [:form {:action "/add-todo" :method "POST"}
+              (anti-forgery-field)
+              [:div.input-group]
+              [:input {:type "hidden" :name "list" :value (:id list-info)}]
+              [:input.form-control {:type "Text" :name "description" :placeholder "Todo: "}]
+              [:span.input-group-btn
+              [:input.btn.btn-success {:type "submit" :value "Add todo to list"}]]]]]])))
 
 (defn list-add-form
   []
@@ -173,8 +177,8 @@
         (delete-todo id)
         (redirect "/"))
   (GET "/delete-list/:id" [id & rest]
-        (delete-list id)
-        (redirect "/"))
+       (delete-list id)
+       (redirect "/"))
   (route/not-found "Not Found"))
 
 (def app
