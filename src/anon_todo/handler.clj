@@ -1,6 +1,7 @@
 (ns anon-todo.handler
   (:require [compojure.core :refer :all]
             [compojure.route :as route]
+            [clojure.string :as str]
             [ring.middleware.defaults :refer [wrap-defaults site-defaults]]
             [ring.util.response :refer [redirect]]
             [anon-todo.model :as model]
@@ -17,8 +18,7 @@
   (GET "/about" []
        (view/about-page))
   (POST "/add-todo" [_ & rest]
-        (if (empty? (:description rest))
-          (model/post-todo (assoc-in rest [:description] "Fill in the todo field before adding a todo"))
+        (when-not (str/blank? (:description rest))
           (model/post-todo rest))
         (redirect "/"))
   (POST "/add-list" req
