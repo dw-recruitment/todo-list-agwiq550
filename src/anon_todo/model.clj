@@ -24,8 +24,8 @@
                                               [:list :int "references listoflists"])))
   (if (empty? (sql/query sql-address ["SELECT * FROM todos WHERE name = 'anon'"]))
     (sql/insert! sql-address :todos
-                 {:description "Find the flow" :done false :name "anon" :list 1}
-                 {:description "Nurture and nourish the flow" :done true :name "anon" :list 1})))
+                 {:description "Discover the flow" :done true :name "anon" :list 1}
+                 {:description "Nurture and nourish the flow" :done false :name "anon" :list 1})))
 
 (defn get-todos
   [listid]
