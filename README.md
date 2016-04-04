@@ -1,6 +1,6 @@
 # anon-todo-2
 
-FIXME
+A stylish todo list.
 
 ## Prerequisites
 
@@ -16,6 +16,7 @@ Create the db:
 
 note: for testing, it is essential the db be named anon-todo
 This can be changed in the src/anon_todo/model.clj file.
+Also, the user should have access to the db to be able to create new tables.
 
 To start a web server for the application, run:
 
